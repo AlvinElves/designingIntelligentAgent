@@ -228,8 +228,8 @@ class Bot:
 
         centre1PosX = self.x
         centre1PosY = self.y
-        canvas.create_oval(centre1PosX - 8, centre1PosY - 8,
-                           centre1PosX + 8, centre1PosY + 8,
+        canvas.create_oval(centre1PosX - 15, centre1PosY - 15,
+                           centre1PosX + 15, centre1PosY + 15,
                            fill="gold", tags=self.name)
 
         wheel1PosX = self.x - 30 * math.sin(self.theta)
@@ -254,6 +254,7 @@ class Bot:
         canvas.create_oval(sensor2PosX - 3, sensor2PosY - 3,
                            sensor2PosX + 3, sensor2PosY + 3,
                            fill="yellow", tags=self.name)
+        canvas.create_text(self.x, self.y, text=str(self.batteryLevel), tags=self.name)
 
     # handles the physics of the movement
     # cf. Dudek and Jenkin, Computational Principles of Mobile Robotics
@@ -285,15 +286,16 @@ class Bot:
             self.x += self.vr * math.cos(self.theta)  # vr wlog
             self.y += self.vr * math.sin(self.theta)
 
-            if self.x > app_Width:
-                self.x = 0
-            elif self.x < 0:
-                self.x = app_Width
+        # Make the robot go around the window when it is off the screen
+        if self.x > app_Width - 1:
+            self.x = 1
+        elif self.x < 1:
+            self.x = app_Width - 1
 
-            if self.y > app_Width:
-                self.y = 0
-            elif self.y < 0:
-                self.y = app_Height
+        if self.y > app_Height - 1:
+            self.y = 1
+        elif self.y < 1:
+            self.y = app_Height - 1
 
         canvas.delete(self.name)
         self.draw(canvas)

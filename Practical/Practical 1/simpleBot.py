@@ -34,15 +34,15 @@ def register(canvas):
     for i in range(0, noOfLights):
         lamp = Lamp("Lamp" + str(i))
         registryPassives.append(lamp)
-        lamp.draw(canvas)
+        lamp.draw(canvas, 'yellow')
     for i in range(0, noOfCharger):
         charger = Charger("Charger" + str(i))
         registryPassives.append(charger)
-        charger.draw(canvas)
+        charger.draw(canvas, 'black')
     for i in range(0, noOfHeater):
         heater = Heater("Heater" + str(i))
         registryPassives.append(heater)
-        heater.draw(canvas)
+        heater.draw(canvas, 'red')
     return registryActives, registryPassives
 
 
