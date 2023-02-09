@@ -26,8 +26,8 @@ class Bot:
 
         self.map = np.zeros((10, 10))
 
-    def brain(self, chargerL, chargerR):
-
+    def brain(self, chargerL, chargerR,  locationL, locationR):
+        """
         # wandering behaviour
         if self.currentlyTurning:
             self.vl = -2.0
@@ -43,6 +43,16 @@ class Bot:
         if self.turning == 0 and self.currentlyTurning:
             self.moving = random.randrange(50, 100)
             self.currentlyTurning = False
+        """
+        if locationR > locationL:
+            self.vl = 2.0
+            self.vr = -2.0
+        elif locationR < locationL:
+            self.vl = -2.0
+            self.vr = 2.0
+        if abs(locationR - locationL) < locationL * 0.4:  # approximately the same
+            self.vl = 5.0
+            self.vr = 5.0
 
         # battery - these are later so they have priority
         if self.battery < 600:
@@ -178,12 +188,38 @@ class Bot:
         for pp in registryPassives:
             if isinstance(pp, Charger):
                 lx, ly = pp.getLocation()
-                distanceL = math.sqrt((lx - self.sensorPositions[0]) * (lx - self.sensorPositions[0]) + \
+                distanceL = math.sqrt((lx - self.sensorPositions[0]) * (lx - self.sensorPositions[0]) +
                                       (ly - self.sensorPositions[1]) * (ly - self.sensorPositions[1]))
-                distanceR = math.sqrt((lx - self.sensorPositions[2]) * (lx - self.sensorPositions[2]) + \
+                distanceR = math.sqrt((lx - self.sensorPositions[2]) * (lx - self.sensorPositions[2]) +
                                       (ly - self.sensorPositions[3]) * (ly - self.sensorPositions[3]))
                 lightL += 200000 / (distanceL * distanceL)
                 lightR += 200000 / (distanceR * distanceR)
+
+        return lightL, lightR
+
+    def senseLocation(self):
+        lightL = 0.0
+        lightR = 0.0
+        nearest_distance = 10000
+        location = []
+        for xxx in range(self.map.shape[0]):
+            for yyy in range(self.map.shape[1]):
+                if self.map[xxx, yyy] != 1:
+                    distance = math.sqrt((self.x - xxx) ** 2 + (self.y - yyy) ** 2)
+                    if distance < nearest_distance:
+                        nearest_distance = distance
+                        location = [xxx, yyy]
+
+        lx = (location[0] * 100) + 50
+        ly = (location[1] * 85) + 42.5
+
+        distanceL = math.sqrt((lx - self.sensorPositions[0]) * (lx - self.sensorPositions[0]) +
+                              (ly - self.sensorPositions[1]) * (ly - self.sensorPositions[1]))
+        distanceR = math.sqrt((lx - self.sensorPositions[2]) * (lx - self.sensorPositions[2]) +
+                              (ly - self.sensorPositions[3]) * (ly - self.sensorPositions[3]))
+        lightL += 200000 / (distanceL * distanceL)
+        lightR += 200000 / (distanceR * distanceR)
+
         return lightL, lightR
 
     def distanceTo(self, obj):
@@ -294,8 +330,9 @@ def register(canvas):
 def moveIt(canvas, registryActives, registryPassives, noOfBots, count, numberOfMoves):
     for rr in registryActives:
         chargerIntensityL, chargerIntensityR = rr.senseCharger(registryPassives)
-        rr.brain(chargerIntensityL, chargerIntensityR)
+        locationIntensityL, locationIntensityR = rr.senseLocation()
         rr.move(canvas, registryPassives, 1.0)
+        rr.brain(chargerIntensityL, chargerIntensityR,  locationIntensityL, locationIntensityR)
         registryPassives = rr.collectDirt(canvas, registryPassives, count)
     canvas.itemconfigure("time_remaining", text="Time remaining: " + str(500 - numberOfMoves))
     if numberOfMoves < 500:
