@@ -25,6 +25,7 @@ class Bot:
         self.canvas = canvasp
 
         self.map = np.zeros((10, 10))
+        self.mapList = []
 
     def brain(self, chargerL, chargerR,  locationL, locationR):
         """
@@ -125,8 +126,9 @@ class Bot:
     def drawMap(self, canvas):
         for xx in range(self.map.shape[0]):
             for yy in range(self.map.shape[1]):
-                if self.map[xx, yy] == 1:
+                if self.map[xx, yy] == 1 and [xx, yy] not in self.mapList:
                     canvas.create_rectangle(100*xx, 85*yy, 100*xx + 100, 85*yy + 85, fill='pink', width=0, tags='maps')
+                    self.mapList.append([xx, yy])
         canvas.tag_lower('maps')
 
     # cf. Dudek and Jenkin, Computational Principles of Mobile Robotics
@@ -174,9 +176,10 @@ class Bot:
             self.y = 849.0
         if self.y > 850.0:
             self.y = 0.0
-        canvas.delete(self.name)
 
         self.updateMap()
+
+        canvas.delete(self.name)
 
         self.draw(canvas)
 
@@ -205,18 +208,15 @@ class Bot:
         for xxx in range(self.map.shape[0]):
             for yyy in range(self.map.shape[1]):
                 if self.map[xxx, yyy] != 1:
-                    distance = math.sqrt((self.x - xxx) ** 2 + (self.y - yyy) ** 2)
+                    distance = math.sqrt((self.x - ((xxx * 100) + 50)) ** 2 + (self.y - ((yyy * 85) + 42.5)) ** 2)
                     if distance < nearest_distance:
                         nearest_distance = distance
-                        location = [xxx, yyy]
+                        location = [(xxx * 100) + 50, (yyy * 85) + 42.5]
 
-        lx = (location[0] * 100) + 50
-        ly = (location[1] * 85) + 42.5
-
-        distanceL = math.sqrt((lx - self.sensorPositions[0]) * (lx - self.sensorPositions[0]) +
-                              (ly - self.sensorPositions[1]) * (ly - self.sensorPositions[1]))
-        distanceR = math.sqrt((lx - self.sensorPositions[2]) * (lx - self.sensorPositions[2]) +
-                              (ly - self.sensorPositions[3]) * (ly - self.sensorPositions[3]))
+        distanceL = math.sqrt((location[0] - self.sensorPositions[0]) * (location[0] - self.sensorPositions[0]) +
+                              (location[1] - self.sensorPositions[1]) * (location[1] - self.sensorPositions[1]))
+        distanceR = math.sqrt((location[0] - self.sensorPositions[2]) * (location[0] - self.sensorPositions[2]) +
+                              (location[1] - self.sensorPositions[3]) * (location[1] - self.sensorPositions[3]))
         lightL += 200000 / (distanceL * distanceL)
         lightR += 200000 / (distanceR * distanceR)
 
