@@ -10,8 +10,8 @@ from Counter import *
 class Bot:
 
     def __init__(self, namep, canvasp):
-        self.x = random.randint(100, 900)
-        self.y = random.randint(100, 750)
+        self.x = random.randint(50, 950)
+        self.y = random.randint(50, 800)
         self.theta = random.uniform(0.0, 2.0 * math.pi)
         # self.theta = 0
         self.name = namep
@@ -24,7 +24,10 @@ class Bot:
         self.currentlyTurning = False
         self.canvas = canvasp
 
+        self.map = np.zeros((10, 10))
+
     def brain(self, chargerL, chargerR):
+
         # wandering behaviour
         if self.currentlyTurning:
             self.vl = -2.0
@@ -104,6 +107,18 @@ class Bot:
                            sensor2PosX + 3, sensor2PosY + 3,
                            fill="yellow", tags=self.name)
 
+    def updateMap(self):
+        xMapPosition = int(math.floor(self.x / 100))
+        yMapPosition = int(math.floor(self.y / 85))
+        self.map[xMapPosition, yMapPosition] = 1
+
+    def drawMap(self, canvas):
+        for xx in range(self.map.shape[0]):
+            for yy in range(self.map.shape[1]):
+                if self.map[xx, yy] == 1:
+                    canvas.create_rectangle(100*xx, 85*yy, 100*xx + 100, 85*yy + 85, fill='pink', width=0, tags='maps')
+        canvas.tag_lower('maps')
+
     # cf. Dudek and Jenkin, Computational Principles of Mobile Robotics
     def move(self, canvas, registryPassives, dt):
         if self.battery > 0:
@@ -150,7 +165,12 @@ class Bot:
         if self.y > 850.0:
             self.y = 0.0
         canvas.delete(self.name)
+
+        self.updateMap()
+
         self.draw(canvas)
+
+        self.drawMap(canvas)
 
     def senseCharger(self, registryPassives):
         lightL = 0.0
@@ -186,8 +206,8 @@ class Bot:
 
 class Charger:
     def __init__(self, namep):
-        self.centreX = random.randint(100, 900)
-        self.centreY = random.randint(100, 750)
+        self.centreX = random.randint(50, 950)
+        self.centreY = random.randint(50, 800)
         self.name = namep
 
     def draw(self, canvas):
@@ -216,8 +236,8 @@ class WiFiHub:
 
 class Dirt:
     def __init__(self, namep):
-        self.centreX = random.randint(100, 900)
-        self.centreY = random.randint(100, 750)
+        self.centreX = random.randint(10, 990)
+        self.centreY = random.randint(10, 840)
         self.name = namep
 
     def draw(self, canvas):
@@ -246,7 +266,7 @@ def initialise(window):
 def register(canvas):
     registryActives = []
     registryPassives = []
-    noOfBots = 2
+    noOfBots = 1
     noOfDirt = 300
     for i in range(0, noOfBots):
         bot = Bot("Bot" + str(i), canvas)
@@ -255,7 +275,7 @@ def register(canvas):
     charger = Charger("Charger")
     registryPassives.append(charger)
     charger.draw(canvas)
-    hub1 = WiFiHub("Hub1", 950, 50)
+    hub1 = WiFiHub("Hub1", 850, 50)
     registryPassives.append(hub1)
     hub1.draw(canvas)
     hub2 = WiFiHub("Hub1", 50, 500)
