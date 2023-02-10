@@ -28,7 +28,9 @@ class Bot:
         self.empty_cell = True
         self.mapList = []
 
-    def brain(self, chargerL, chargerR, locationL, locationR, method):
+        self.dirtCapacity = 0
+
+    def brain(self, chargerL, chargerR, locationL, locationR, binL, binR, method):
         if self.empty_cell and method == 'NearestGrid':
             if locationR > locationL:
                 self.vl = 2.0
@@ -56,7 +58,24 @@ class Bot:
                 self.moving = random.randrange(50, 100)
                 self.currentlyTurning = False
 
-        # battery - these are later so they have priority
+        # bin - these are later so they have priority
+        if self.dirtCapacity > 10:
+            if binR > binL:
+                self.vl = 2.0
+                self.vr = -2.0
+            elif binR < binL:
+                self.vl = -2.0
+                self.vr = 2.0
+            if abs(binR - binL) < binL * 0.1:  # approximately the same
+                self.vl = 5.0
+                self.vr = 5.0
+            # self.vl = 5*math.sqrt(chargerR)
+            # self.vr = 5*math.sqrt(chargerL)
+        if binL + binR > 200 and self.dirtCapacity > 0:
+            self.vl = 0.0
+            self.vr = 0.0
+
+        # battery - these are the latest, so they have the highest priority
         if self.battery < 600:
             if chargerR > chargerL:
                 self.vl = 2.0
@@ -91,10 +110,11 @@ class Bot:
 
         centre1PosX = self.x
         centre1PosY = self.y
-        canvas.create_oval(centre1PosX - 15, centre1PosY - 15,
-                           centre1PosX + 15, centre1PosY + 15,
+        canvas.create_oval(centre1PosX - 20, centre1PosY - 20,
+                           centre1PosX + 20, centre1PosY + 20,
                            fill="gold", tags=self.name)
-        canvas.create_text(self.x, self.y, text=str(self.battery), tags=self.name)
+        canvas.create_text(self.x, self.y - 8, text=str(self.battery), tags=self.name)
+        canvas.create_text(self.x, self.y + 8, text=str(self.dirtCapacity), tags=self.name, fill='brown')
 
         wheel1PosX = self.x - 30 * math.sin(self.theta)
         wheel1PosY = self.y + 30 * math.cos(self.theta)
@@ -146,6 +166,9 @@ class Bot:
                     self.battery += 10
                 elif 990 <= self.battery < 1000:
                     self.battery += 1000 - self.battery
+            if isinstance(rr, Bin) and self.distanceTo(rr) < 80:
+                if self.dirtCapacity > 0:
+                    self.dirtCapacity -= 1
 
         if self.vl == self.vr:
             R = 0
@@ -202,6 +225,21 @@ class Bot:
 
         return lightL, lightR
 
+    def senseBin(self, registryPassives):
+        lightL = 0.0
+        lightR = 0.0
+        for pp in registryPassives:
+            if isinstance(pp, Bin):
+                lx, ly = pp.getLocation()
+                distanceL = math.sqrt((lx - self.sensorPositions[0]) * (lx - self.sensorPositions[0]) +
+                                      (ly - self.sensorPositions[1]) * (ly - self.sensorPositions[1]))
+                distanceR = math.sqrt((lx - self.sensorPositions[2]) * (lx - self.sensorPositions[2]) +
+                                      (ly - self.sensorPositions[3]) * (ly - self.sensorPositions[3]))
+                lightL += 200000 / (distanceL * distanceL)
+                lightR += 200000 / (distanceR * distanceR)
+
+        return lightL, lightR
+
     def senseLocation(self):
         lightL = 0.0
         lightR = 0.0
@@ -235,9 +273,11 @@ class Bot:
         for idx, rr in enumerate(registryPassives):
             if isinstance(rr, Dirt):
                 if self.distanceTo(rr) < 30:
-                    canvas.delete(rr.name)
-                    toDelete.append(idx)
-                    count.itemCollected()
+                    if self.dirtCapacity < 20:
+                        canvas.delete(rr.name)
+                        self.dirtCapacity += 1
+                        toDelete.append(idx)
+                        count.itemCollected()
 
         for ii in sorted(toDelete, reverse=True):
             del registryPassives[ii]
@@ -254,6 +294,21 @@ class Charger:
         body = canvas.create_oval(self.centreX - 10, self.centreY - 10,
                                   self.centreX + 10, self.centreY + 10,
                                   fill="gold", tags=self.name)
+
+    def getLocation(self):
+        return self.centreX, self.centreY
+
+
+class Bin:
+    def __init__(self, namep):
+        self.centreX = random.randint(50, 950)
+        self.centreY = random.randint(50, 800)
+        self.name = namep
+
+    def draw(self, canvas):
+        body = canvas.create_oval(self.centreX - 10, self.centreY - 10,
+                                  self.centreX + 10, self.centreY + 10,
+                                  fill="brown", tags=self.name)
 
     def getLocation(self):
         return self.centreX, self.centreY
@@ -307,23 +362,34 @@ def register(canvas, noOfBots, gridMap):
     registryActives = []
     registryPassives = []
     noOfDirt = 300
+    noOfBin = 1
     for i in range(0, noOfBots):
         bot = Bot("Bot" + str(i), canvas, gridMap)
         registryActives.append(bot)
         bot.draw(canvas)
+
     charger = Charger("Charger")
     registryPassives.append(charger)
     charger.draw(canvas)
+
     hub1 = WiFiHub("Hub1", 850, 50)
     registryPassives.append(hub1)
     hub1.draw(canvas)
+
     hub2 = WiFiHub("Hub1", 50, 500)
     registryPassives.append(hub2)
     hub2.draw(canvas)
+
     for i in range(0, noOfDirt):
         dirt = Dirt("Dirt" + str(i))
         registryPassives.append(dirt)
         dirt.draw(canvas)
+
+    for i in range(0, noOfBin):
+        rubbishBin = Bin("Bin" + str(i))
+        registryPassives.append(rubbishBin)
+        rubbishBin.draw(canvas)
+
     count = Counter(canvas)
 
     canvas.bind("<Button-1>", lambda event: buttonClicked(event.x, event.y, registryActives))
@@ -333,9 +399,10 @@ def register(canvas, noOfBots, gridMap):
 def moveIt(canvas, window, registryActives, registryPassives, noOfBots, count, numberOfMoves, method):
     for rr in registryActives:
         chargerIntensityL, chargerIntensityR = rr.senseCharger(registryPassives)
+        binIntensityL, binIntensityR = rr.senseBin(registryPassives)
         locationIntensityL, locationIntensityR = rr.senseLocation()
         rr.move(canvas, registryPassives, 1.0)
-        rr.brain(chargerIntensityL, chargerIntensityR, locationIntensityL, locationIntensityR, method)
+        rr.brain(chargerIntensityL, chargerIntensityR, locationIntensityL, locationIntensityR, binIntensityL, binIntensityR, method)
         registryPassives = rr.collectDirt(canvas, registryPassives, count)
     canvas.itemconfigure("time_remaining", text="Time remaining: " + str(1000 - numberOfMoves))
     if numberOfMoves < 1000:
