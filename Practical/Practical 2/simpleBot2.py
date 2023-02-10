@@ -3,13 +3,13 @@ import tkinter as tk
 import random
 import math
 import numpy as np
+import pandas as pd
 
 from Counter import *
 
 
 class Bot:
-
-    def __init__(self, namep, canvasp):
+    def __init__(self, namep, canvasp, gridMap):
         self.x = random.randint(50, 950)
         self.y = random.randint(50, 800)
         self.theta = random.uniform(0.0, 2.0 * math.pi)
@@ -24,36 +24,37 @@ class Bot:
         self.currentlyTurning = False
         self.canvas = canvasp
 
-        self.map = np.zeros((10, 10))
+        self.map = gridMap
+        self.empty_cell = True
         self.mapList = []
 
-    def brain(self, chargerL, chargerR,  locationL, locationR):
-        """
-        # wandering behaviour
-        if self.currentlyTurning:
-            self.vl = -2.0
-            self.vr = 2.0
-            self.turning -= 1
+    def brain(self, chargerL, chargerR, locationL, locationR, method):
+        if self.empty_cell and method == 'NearestGrid':
+            if locationR > locationL:
+                self.vl = 2.0
+                self.vr = -2.0
+            elif locationR < locationL:
+                self.vl = -2.0
+                self.vr = 2.0
+            if abs(locationR - locationL) < locationL * 0.4:  # approximately the same
+                self.vl = 5.0
+                self.vr = 5.0
         else:
-            self.vl = 5.0
-            self.vr = 5.0
-            self.moving -= 1
-        if self.moving == 0 and not self.currentlyTurning:
-            self.turning = random.randrange(20, 40)
-            self.currentlyTurning = True
-        if self.turning == 0 and self.currentlyTurning:
-            self.moving = random.randrange(50, 100)
-            self.currentlyTurning = False
-        """
-        if locationR > locationL:
-            self.vl = 2.0
-            self.vr = -2.0
-        elif locationR < locationL:
-            self.vl = -2.0
-            self.vr = 2.0
-        if abs(locationR - locationL) < locationL * 0.4:  # approximately the same
-            self.vl = 5.0
-            self.vr = 5.0
+            # wandering behaviour
+            if self.currentlyTurning:
+                self.vl = -2.0
+                self.vr = 2.0
+                self.turning -= 1
+            else:
+                self.vl = 5.0
+                self.vr = 5.0
+                self.moving -= 1
+            if self.moving == 0 and not self.currentlyTurning:
+                self.turning = random.randrange(20, 40)
+                self.currentlyTurning = True
+            if self.turning == 0 and self.currentlyTurning:
+                self.moving = random.randrange(50, 100)
+                self.currentlyTurning = False
 
         # battery - these are later so they have priority
         if self.battery < 600:
@@ -127,7 +128,8 @@ class Bot:
         for xx in range(self.map.shape[0]):
             for yy in range(self.map.shape[1]):
                 if self.map[xx, yy] == 1 and [xx, yy] not in self.mapList:
-                    canvas.create_rectangle(100*xx, 85*yy, 100*xx + 100, 85*yy + 85, fill='pink', width=0, tags='maps')
+                    canvas.create_rectangle(100 * xx, 85 * yy, 100 * xx + 100, 85 * yy + 85, fill='pink', width=0,
+                                            tags='maps')
                     self.mapList.append([xx, yy])
         canvas.tag_lower('maps')
 
@@ -212,13 +214,15 @@ class Bot:
                     if distance < nearest_distance:
                         nearest_distance = distance
                         location = [(xxx * 100) + 50, (yyy * 85) + 42.5]
-
-        distanceL = math.sqrt((location[0] - self.sensorPositions[0]) * (location[0] - self.sensorPositions[0]) +
-                              (location[1] - self.sensorPositions[1]) * (location[1] - self.sensorPositions[1]))
-        distanceR = math.sqrt((location[0] - self.sensorPositions[2]) * (location[0] - self.sensorPositions[2]) +
-                              (location[1] - self.sensorPositions[3]) * (location[1] - self.sensorPositions[3]))
-        lightL += 200000 / (distanceL * distanceL)
-        lightR += 200000 / (distanceR * distanceR)
+        if not location:
+            self.empty_cell = False
+        else:
+            distanceL = math.sqrt((location[0] - self.sensorPositions[0]) * (location[0] - self.sensorPositions[0]) +
+                                  (location[1] - self.sensorPositions[1]) * (location[1] - self.sensorPositions[1]))
+            distanceR = math.sqrt((location[0] - self.sensorPositions[2]) * (location[0] - self.sensorPositions[2]) +
+                                  (location[1] - self.sensorPositions[3]) * (location[1] - self.sensorPositions[3]))
+            lightL += 200000 / (distanceL * distanceL)
+            lightR += 200000 / (distanceR * distanceR)
 
         return lightL, lightR
 
@@ -299,13 +303,12 @@ def initialise(window):
     return canvas
 
 
-def register(canvas):
+def register(canvas, noOfBots, gridMap):
     registryActives = []
     registryPassives = []
-    noOfBots = 1
     noOfDirt = 300
     for i in range(0, noOfBots):
-        bot = Bot("Bot" + str(i), canvas)
+        bot = Bot("Bot" + str(i), canvas, gridMap)
         registryActives.append(bot)
         bot.draw(canvas)
     charger = Charger("Charger")
@@ -327,32 +330,51 @@ def register(canvas):
     return registryActives, registryPassives, count, noOfBots
 
 
-def moveIt(canvas, registryActives, registryPassives, noOfBots, count, numberOfMoves):
+def moveIt(canvas, window, registryActives, registryPassives, noOfBots, count, numberOfMoves, method):
     for rr in registryActives:
         chargerIntensityL, chargerIntensityR = rr.senseCharger(registryPassives)
         locationIntensityL, locationIntensityR = rr.senseLocation()
         rr.move(canvas, registryPassives, 1.0)
-        rr.brain(chargerIntensityL, chargerIntensityR,  locationIntensityL, locationIntensityR)
+        rr.brain(chargerIntensityL, chargerIntensityR, locationIntensityL, locationIntensityR, method)
         registryPassives = rr.collectDirt(canvas, registryPassives, count)
-    canvas.itemconfigure("time_remaining", text="Time remaining: " + str(500 - numberOfMoves))
-    if numberOfMoves < 500:
+    canvas.itemconfigure("time_remaining", text="Time remaining: " + str(1000 - numberOfMoves))
+    if numberOfMoves < 1000:
         numberOfMoves += 1
     else:
-        print(f"SIMULATION TERMINATED\nNumber of Robot Agent: {noOfBots}\n"
+        print(f"SIMULATION TERMINATED\nNumber of Robot Agent: {noOfBots}\nMethod Used: {method}\n"
               f"Number of Dirt Collected in {numberOfMoves} moves: {count.dirtCollected}")
-        sys.exit()
+        #sys.exit()
+        canvas.destroy()
+        window.destroy()
 
-    canvas.after(50, moveIt, canvas, registryActives, registryPassives, noOfBots, count, numberOfMoves)
+    canvas.after(50, moveIt, canvas, window, registryActives, registryPassives, noOfBots, count, numberOfMoves, method)
 
 
-def main():
+def main(noOfBots, method):
+    gridMap = np.zeros((10, 10))
     window = tk.Tk()
     canvas = initialise(window)
-    registryActives, registryPassives, count, noOfBots = register(canvas)
+    registryActives, registryPassives, count, noOfBots = register(canvas, noOfBots, gridMap)
     numberOfMoves = 0
-    canvas.create_text(58, 25, text="Time remaining: " + str(500 - numberOfMoves), tags="time_remaining")
-    moveIt(canvas, registryActives, registryPassives, noOfBots, count, numberOfMoves)
+    canvas.create_text(58, 25, text="Time remaining: " + str(1000 - numberOfMoves), tags="time_remaining")
+    moveIt(canvas, window, registryActives, registryPassives, noOfBots, count, numberOfMoves, method)
     window.mainloop()
+    return count.dirtCollected
 
 
-main()
+result_list = []
+variousProgram = False
+if variousProgram:
+    numberOfBots = 3
+    typeOfMethod = ['Wandering', 'NearestGrid']
+    numberOfIteration = numberOfBots + 1
+    for i in range(1, numberOfBots + 1):
+        for j in typeOfMethod:
+            result_list.append([i, j, main(i, j)])
+else:
+    numberOfBots = 5
+    typeOfMethod = 'NearestGrid'
+    result_list.append([numberOfBots, typeOfMethod, main(numberOfBots, typeOfMethod)])
+
+result_table = pd.DataFrame(result_list, columns=['Number of Robots', 'Method Used', 'Dirt Collected'])
+print(result_table)
