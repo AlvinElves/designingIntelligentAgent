@@ -34,6 +34,8 @@ class Bot:
         self.currentlyTurning = False
         self.canvas = canvasp
 
+        self.completed = False
+
     def draw(self, canvas):
         points = [(self.x + 30 * math.sin(self.theta)) - 30 * math.sin((math.pi / 2.0) - self.theta),
                   (self.y - 30 * math.cos(self.theta)) - 30 * math.cos((math.pi / 2.0) - self.theta),
@@ -141,32 +143,56 @@ class Bot:
             del registryPassives[ii]
         return registryPassives
 
-    def brain(self, path):
-        """
-        # wandering behaviour
-        if self.currentlyTurning == True:
-            self.vl = -2.0
-            self.vr = 2.0
-            self.turning -= 1
-        else:
-            self.vl = 5.0
-            self.vr = 5.0
-            self.moving -= 1
-        if self.moving == 0 and not self.currentlyTurning:
-            self.turning = random.randrange(20, 40)
-            self.currentlyTurning = True
-        if self.turning == 0 and self.currentlyTurning:
-            self.moving = random.randrange(50, 100)
-            self.currentlyTurning = False
-        """
-        target = path[0]
-        coordinate_target = list(target)
-        for i in range(len(coordinate_target)):
-            new_number = (coordinate_target[i] * 100) + 50
-            coordinate_target[i] = new_number
-        coordinate_target = tuple(coordinate_target)
-        print(target)
-        print(coordinate_target)
+    def brain(self, path, movement_method):
+        if movement_method == 'Wandering':
+            # wandering behaviour
+            if self.currentlyTurning is True:
+                self.vl = -2.0
+                self.vr = 2.0
+                self.turning -= 1
+            else:
+                self.vl = 5.0
+                self.vr = 5.0
+                self.moving -= 1
+            if self.moving == 0 and not self.currentlyTurning:
+                self.turning = random.randrange(20, 40)
+                self.currentlyTurning = True
+            if self.turning == 0 and self.currentlyTurning:
+                self.moving = random.randrange(50, 100)
+                self.currentlyTurning = False
+
+        elif movement_method == 'aStar':
+            # Move to target position
+            if not self.completed:
+                if len(path) != 0:
+                    target = path[0]
+                    coordinate_target = list(target)
+                    for i in range(len(coordinate_target)):
+                        new_number = (coordinate_target[i] * 100) + 50
+                        coordinate_target[i] = new_number
+                    coordinate_target = tuple(coordinate_target)
+
+                    rightDistance = self.distanceToRightSensor(coordinate_target[0], coordinate_target[1])
+                    leftDistance = self.distanceToLeftSensor(coordinate_target[0], coordinate_target[1])
+
+                    if rightDistance > leftDistance:
+                        self.vl = 2.0
+                        self.vr = -2.0
+                    elif rightDistance < leftDistance:
+                        self.vl = -2.0
+                        self.vr = 2.0
+                    if abs(rightDistance - leftDistance) < leftDistance * 0.1:  # approximately the same
+                        self.vl = 5.0
+                        self.vr = 5.0
+
+                    if rightDistance < 40 or leftDistance < 40:
+                        path.pop(0)
+
+                else:
+                    self.vl = 0.0
+                    self.vr = 0.0
+                    self.completed = True
+                    print("finished")
 
 
 class Dirt:
@@ -224,10 +250,10 @@ def placeDirt(registryPassives, canvas):
     return map
 
 
-def register(canvas):
+def register(canvas, numberOfRobots):
     registryActives = []
     registryPassives = []
-    noOfBots = 1
+    noOfBots = numberOfRobots
     for i in range(0, noOfBots):
         bot = Bot("Bot" + str(i), canvas)
         registryActives.append(bot)
@@ -238,29 +264,28 @@ def register(canvas):
     return registryActives, registryPassives, count, gridMap
 
 
-def moveIt(canvas, registryActives, registryPassives, count, moves, window, path):
+def moveIt(canvas, registryActives, registryPassives, count, moves, window, path, movement_method):
     moves += 1
     for rr in registryActives:
-        rr.brain(path)
+        rr.brain(path, movement_method)
         rr.move(canvas, registryPassives, 1.0)
         registryPassives = rr.collectDirt(canvas, registryPassives, count)
         numberOfMoves = 2000
-        if moves > numberOfMoves:
+        if moves > numberOfMoves or rr.completed is True:
             print("total dirt collected in", numberOfMoves, "moves is", count.dirtCollected)
+            canvas.delete('all')
             window.destroy()
-    canvas.after(20, moveIt, canvas, registryActives, registryPassives, count, moves, window, path)
+    canvas.after(20, moveIt, canvas, registryActives, registryPassives, count, moves, window, path, movement_method)
 
 
-def main():
+def main(numberOfRobots, movement_method):
     window = tk.Tk()
     canvas = initialise(window)
-    registryActives, registryPassives, count, gridMap = register(canvas)
+    registryActives, registryPassives, count, gridMap = register(canvas, numberOfRobots)
     moves = 0
     path = aStarSearch(gridMap)
     print(path)
-    moveIt(canvas, registryActives, registryPassives, count, moves, window, path)
+    moveIt(canvas, registryActives, registryPassives, count, moves, window, path, movement_method)
     window.mainloop()
     return count.dirtCollected
 
-
-main()
