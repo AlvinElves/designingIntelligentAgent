@@ -279,7 +279,7 @@ class Bot:
 
     def checkForDanger(self, dangerThreshold, registryActives):
         if max(self.view) > dangerThreshold:
-            #playsound("436589__julien - matthey__jm - transport - ext - horn - 01a - car - short - mini - countryman.wav", block = False)
+            #playsound("436589__julien-matthey__jm-transport-ext-horn-01a-car-short-mini-countryman.wav", block=False)
             print("COLLISION WARNING")
             for rr in registryActives:
                 if isinstance(rr, Cat):
@@ -543,8 +543,6 @@ def main():
     signalStrengths = training(registryActives, registryPassives, canvas)
 
     moves = 0
-
-    #dangerThreshold = train()
 
     moveIt(canvas, registryActives, registryPassives, count, moves, signalStrengths, dangerThreshold)
     window.mainloop()
