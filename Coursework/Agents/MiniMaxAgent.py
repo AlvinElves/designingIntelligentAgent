@@ -20,21 +20,21 @@ class MiniMaxAgent:
         for move in legal_moves:
             # copy the environment to avoid changing  the original environment
             temp = deepcopy(env)
-
             _, reward, done, _ = temp.step(move)
 
+            # if checkmate
+            if temp.check_jiang():
+                # Increased the score by 3 since checkmate is important
+                scores.append(self.eval_board(temp) + 3)
+
             # if the game did not finish
-            if done is False:
+            elif done is False:
                 # if we have not got to the last depth
                 if depth > 1:
                     temp_best_move = self.minimax_N(temp, depth - 1)
                     _, reward, done, _ = temp.step(temp_best_move)
 
                 scores.append(self.eval_board(temp))
-
-            # if checkmate
-            elif temp.check_jiang():
-                return move
 
             # if the game finished from one of the move
             else:

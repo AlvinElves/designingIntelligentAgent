@@ -8,6 +8,7 @@ from gym_xiangqi.utils import action_space_to_move
 from gym_xiangqi.envs import XiangQiEnv
 
 from Agents.MiniMaxAgent import *
+from Agents.AlphaBetaPruning import *
 
 
 def main():
@@ -18,25 +19,26 @@ def main():
 
     random_agent = RandomAgent()
     minimax_agent = MiniMaxAgent()
+    alpha_beta_agent = AlphaBetaPruning()
 
     done = False
     round_number = 0
 
     while not done:
         if env.turn == ALLY:
-            action = random_agent.move(env)
+            action = alpha_beta_agent.alpha_beta_pruning_move(env, 3, env.turn)
 
             _, reward, done, _ = env.step(action)
             _, reward, done, _ = render_env.step(action)
 
-            player = "Minimax Agent"
+            player = "Alpha Beta Agent"
             move = action_space_to_move(action)
 
             piece = PIECE_ID_TO_NAME[move[0]]
             start = move[1]
             end = move[2]
         else:
-            action = minimax_agent.minimax_N(env, 2)
+            action = random_agent.move(env)
 
             _, reward, done, _ = env.step(action)
             _, reward, done, _ = render_env.step(action)
