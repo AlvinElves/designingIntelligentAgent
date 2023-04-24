@@ -1,5 +1,6 @@
 import numpy as np
 from copy import deepcopy
+import random
 
 from gym_xiangqi.constants import BOARD_ROWS, BOARD_COLS, ALLY, PIECE_POINTS
 
@@ -45,9 +46,21 @@ class MiniMaxAgent:
 
         # If the playing as red, use max score, playing as black, use min score
         if env.turn == ALLY:
-            best_move = legal_moves[scores.index(max(scores))]
+            # Get the maximum score
+            max_scores = max(scores)
+            # Put the indexes of maximum score in a list
+            max_list = [i for i, x in enumerate(scores) if x == max_scores]
+
+            # Randomly choose from the list to explore more maximum score options
+            best_move = legal_moves[random.choice(max_list)]
         else:
-            best_move = legal_moves[scores.index(min(scores))]
+            # Get the minimum score
+            min_scores = min(scores)
+            # Put the indexes of minimum score in a list
+            min_list = [i for i, x in enumerate(scores) if x == min_scores]
+
+            # Randomly choose from the list to explore more minimum score options
+            best_move = legal_moves[random.choice(min_list)]
 
         return best_move
 

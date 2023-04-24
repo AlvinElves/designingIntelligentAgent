@@ -1,5 +1,6 @@
 import numpy as np
 from copy import deepcopy
+import random
 
 from gym_xiangqi.constants import BOARD_ROWS, BOARD_COLS, ALLY, PIECE_POINTS
 
@@ -11,7 +12,7 @@ class AlphaBetaPruning:
     # Recursive alpha beta pruning function
     def alpha_beta_pruning_N(self, env, depth, alpha, beta, player):
         if depth == 1:
-            return -self.eval_board(env, player) - self.eval_space(env)
+            return self.eval_board(env, player) + self.eval_space(env)
 
         # get the list of legal moves
         actions = (env.ally_actions if env.turn == ALLY
@@ -29,7 +30,7 @@ class AlphaBetaPruning:
 
                 # if checkmate
                 if temp.check_jiang():
-                    bestMove = max(bestMove, -self.eval_board(temp, player) + 3)
+                    bestMove = max(bestMove, self.eval_board(temp, player) + 3)
 
                 # if the game did not finish
                 elif done is False:
@@ -37,7 +38,7 @@ class AlphaBetaPruning:
 
                 # if the game finished from one of the move
                 else:
-                    bestMove = max(bestMove, -self.eval_board(temp, player))
+                    bestMove = max(bestMove, self.eval_board(temp, player))
 
                 alpha = max(alpha, bestMove)
 
@@ -57,7 +58,7 @@ class AlphaBetaPruning:
 
                 # if checkmate
                 if temp.check_jiang():
-                    bestMove = min(bestMove, -self.eval_board(temp, player) + 3)
+                    bestMove = min(bestMove, self.eval_board(temp, player) + 3)
 
                 # if the game did not finish
                 elif done is False:
@@ -65,7 +66,7 @@ class AlphaBetaPruning:
 
                 # if the game finished from one of the move
                 else:
-                    bestMove = min(bestMove, -self.eval_board(temp, player))
+                    bestMove = min(bestMove, self.eval_board(temp, player))
 
                 beta = min(beta, bestMove)
 
@@ -75,7 +76,7 @@ class AlphaBetaPruning:
             return bestMove
 
     # Get the best moves from the legal moves
-    def alpha_beta_pruning_move(self, env, depth, player):
+    def alpha_beta_pruning_move(self, env, depth, player, explore_rate):
         # get the list of legal moves
         actions = (env.ally_actions if env.turn == ALLY
                    else env.enemy_actions)
@@ -92,7 +93,7 @@ class AlphaBetaPruning:
 
             # if checkmate
             if temp.check_jiang():
-                value = max(bestMove, -self.eval_board(temp, player) + 3)
+                value = max(bestMove, self.eval_board(temp, player) + 3)
 
             # if the game did not finish
             elif done is False:
@@ -100,12 +101,18 @@ class AlphaBetaPruning:
 
             # if the game finished from one of the move
             else:
-                value = max(bestMove, -self.eval_board(temp, player))
+                value = max(bestMove, self.eval_board(temp, player))
 
             # Check if the value is better than previous best move, so we can slowly reduce the searching
             if value > bestMove:
                 bestMove = value
                 bestMoveFinal = move
+            # If the value is the same, then randomise to explore more options
+            elif value == bestMove:
+                # % chance to explore, depend on the parameter
+                if random.randint(1, 100) < explore_rate:
+                    bestMove = value
+                    bestMoveFinal = move
 
         return bestMoveFinal
 
@@ -127,9 +134,9 @@ class AlphaBetaPruning:
                     score += PIECE_POINTS[current_board[r][c]]
 
         if player == ALLY:
-            return -score
-        else:
             return score
+        else:
+            return -score
 
     # Evaluate based on moves that can make the pieces position better
     def eval_space(self, env):

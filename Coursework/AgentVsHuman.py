@@ -13,7 +13,7 @@ from Agents.AlphaBetaPruning import *
 
 def main():
     # Pass in the color you want to play as (RED or BLACK)
-    env = XiangQiEnv(BLACK)
+    env = XiangQiEnv(RED)
     render_env = deepcopy(env)
     render_env.render()
 
@@ -26,7 +26,7 @@ def main():
 
     while not done:
         if env.turn == ALLY:
-            action = alpha_beta_agent.alpha_beta_pruning_move(env, 3, env.turn)
+            action = alpha_beta_agent.alpha_beta_pruning_move(env, 2, env.turn, 5)
 
             _, reward, done, _ = env.step(action)
             _, reward, done, _ = render_env.step(action)
