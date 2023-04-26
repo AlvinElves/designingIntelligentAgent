@@ -1,4 +1,5 @@
 import time
+import pandas as pd
 
 from gym_xiangqi.agents import RandomAgent
 from gym_xiangqi.constants import (     # NOQA
@@ -11,26 +12,13 @@ from Agents.MiniMaxAgent import *
 from Agents.AlphaBetaPruning import *
 from Agents.MonteCarloTreeSearch import *
 
+from QuestionFunctions import time_taken, movement_counter
+
 
 def single_experiment(visualise, agent1, agent2):
     # Check which agents play to allow multiple experiment
-    if agent1 == 'random_agent':
-        random_agent = RandomAgent()
-    elif agent1 == 'minimax_agent':
-        minimax_agent = MiniMaxAgent()
-    elif agent1 == 'alpha_beta_agent':
-        alpha_beta_agent = AlphaBetaPruning()
-    else:
-        monte_carlo_agent = MonteCarloTreeSearch()
-
-    if agent2 == 'random_agent':
-        random_agent = RandomAgent()
-    elif agent2 == 'minimax_agent':
-        minimax_agent = MiniMaxAgent()
-    elif agent2 == 'alpha_beta_agent':
-        alpha_beta_agent = AlphaBetaPruning()
-    else:
-        monte_carlo_agent = MonteCarloTreeSearch()
+    agent_player1 = starting_agent(agent1)
+    agent_player2 = starting_agent(agent2)
 
     # Pass in the color you want to play as (RED or BLACK)
     env = XiangQiEnv(RED)
@@ -38,37 +26,26 @@ def single_experiment(visualise, agent1, agent2):
         render_env = deepcopy(env)
         render_env.render()
 
+    # Initialise the starting variables for each game
     done = False
     round_number = 0
     time_list = [[], []]
+    chess_list = []
+
+    # Put the list of chess movement into dataframe
+    for i in range(len(PIECE_ID_TO_NAME)):
+        chess_list.append([PIECE_ID_TO_NAME[i], 0, 0])
+
+    piece_move_df = pd.DataFrame(chess_list, columns=['chess_piece', 'agent1_move', 'agent2_move'])
 
     while not done:
+        # Initialise the starting variables for each round
         start_time = time.time()
         piece_list = []
 
         if env.turn == ALLY:
             # Check which agent plays to allow multiple experiment
-            if agent1 == 'random_agent':
-                action = random_agent.move(env)
-                player = "Random Agent"
-
-            elif agent1 == 'minimax_agent':
-                action = minimax_agent.minimax_N(env, 2)
-                player = "Minimax Agent"
-
-            elif agent1 == 'alpha_beta_agent':
-                action = alpha_beta_agent.alpha_beta_pruning_move(env, 3, ALLY, 5)
-                alpha_beta_agent = AlphaBetaPruning()
-                player = "Alpha Beta Agent"
-
-            else:
-                monte_carlo_agent.update(env)
-                original_state = env.state
-                monte_carlo_agent.montecarlo.simulate(100)
-                chose_node = monte_carlo_agent.montecarlo.make_choice()
-
-                action = monte_carlo_agent.find_move_action(original_state, chose_node.state.state)
-                player = "Monte Carlo Agent"
+            action, player = agent_moves(env, agent1, agent_player1, ALLY)
 
             _, reward, done, _ = env.step(action)
             if visualise:
@@ -76,14 +53,11 @@ def single_experiment(visualise, agent1, agent2):
 
             move = action_space_to_move(action)
 
-            piece = PIECE_ID_TO_NAME[move[0]]
-            start = move[1]
-            end = move[2]
-
             # Calculate the time taken for each actions
-            end_time = time.time()
-            difference = end_time - start_time
-            time_list[0].append(difference)
+            time_list = time_taken(start_time, time.time(), time_list, ALLY)
+
+            # Increase the counter based on the piece moved
+            movement_counter(piece_move_df, PIECE_ID_TO_NAME[move[0]], ALLY)
 
             # Get the red pieces that are alive
             piece_set = env.ally_piece
@@ -93,27 +67,7 @@ def single_experiment(visualise, agent1, agent2):
 
         else:
             # Check which agent plays to allow multiple experiment
-            if agent2 == 'random_agent':
-                action = random_agent.move(env)
-                player = "Random Agent"
-
-            elif agent2 == 'minimax_agent':
-                action = minimax_agent.minimax_N(env, 2)
-                player = "Minimax Agent"
-
-            elif agent2 == 'alpha_beta_agent':
-                action = alpha_beta_agent.alpha_beta_pruning_move(env, 3, ENEMY, 5)
-                alpha_beta_agent = AlphaBetaPruning()
-                player = "Alpha Beta Agent"
-
-            else:
-                monte_carlo_agent.update(env)
-                original_state = env.state
-                monte_carlo_agent.montecarlo.simulate(100)
-                chose_node = monte_carlo_agent.montecarlo.make_choice()
-
-                action = monte_carlo_agent.find_move_action(original_state, chose_node.state.state)
-                player = "Monte Carlo Agent"
+            action, player = agent_moves(env, agent2, agent_player2, ENEMY)
 
             _, reward, done, _ = env.step(action)
             if visualise:
@@ -121,14 +75,11 @@ def single_experiment(visualise, agent1, agent2):
 
             move = action_space_to_move(action)
 
-            piece = PIECE_ID_TO_NAME[move[0]]
-            start = move[1]
-            end = move[2]
-
             # Calculate the time taken for each actions
-            end_time = time.time()
-            difference = end_time - start_time
-            time_list[1].append(difference)
+            time_list = time_taken(start_time, time.time(), time_list, ENEMY)
+
+            # Increase the counter based on the piece moved
+            movement_counter(piece_move_df, PIECE_ID_TO_NAME[move[0]], ENEMY)
 
             # Get the black pieces that are alive
             piece_set = env.enemy_piece
@@ -142,7 +93,7 @@ def single_experiment(visualise, agent1, agent2):
         round_number += 1
         print(f"Pieces Alive: {piece_list}")
         print(f"Round: {round_number}")
-        print(f"{player} made the move {piece} from {start} to {end}.")
+        print(f"{player} made the move {PIECE_ID_TO_NAME[move[0]]} from {move[1]} to {move[2]}.")
         print(f"Reward: {reward}")
         print("================")
 
@@ -153,7 +104,44 @@ def single_experiment(visualise, agent1, agent2):
 
     print("Closing Xiangqi environment\n")
     env.close()
+    return time_list
+
+
+def agent_moves(env, agent, agent_player, player):
+    if agent == 'random_agent':
+        action = agent_player.move(env)
+        player = "Random Agent"
+
+    elif agent == 'minimax_agent':
+        action = agent_player.minimax_N(env, 2)
+        player = "Minimax Agent"
+
+    elif agent == 'alpha_beta_agent':
+        action = agent_player.alpha_beta_pruning_move(env, 2, player, 5)
+        player = "Alpha Beta Agent"
+
+    else:
+        agent_player.update(env)
+        original_state = env.state
+        agent_player.montecarlo.simulate(100)
+        chose_node = agent_player.montecarlo.make_choice()
+
+        action = agent_player.find_move_action(original_state, chose_node.state.state)
+        player = "Monte Carlo Agent"
+
+    return action, player
+
+
+def starting_agent(agent):
+    if agent == 'random_agent':
+        return RandomAgent()
+    elif agent == 'minimax_agent':
+        return MiniMaxAgent()
+    elif agent == 'alpha_beta_agent':
+        return AlphaBetaPruning()
+    else:
+        return MonteCarloTreeSearch()
 
 
 if __name__ == '__main__':
-    single_experiment('random_agent', 'monte_carlo_agent')
+    single_experiment(False, 'alpha_beta_agent', 'random_agent')
