@@ -12,7 +12,7 @@ from Agents.MiniMaxAgent import *
 from Agents.AlphaBetaPruning import *
 from Agents.MonteCarloTreeSearch import *
 
-from QuestionFunctions import time_taken, movement_counter
+from QuestionFunctions import time_taken, movement_counter, reward_counter, dead_pieces, alive_pieces, check_sacrifice, sacrifice_pieces_ate
 
 
 def single_experiment(visualise, agent1, agent2):
@@ -30,20 +30,31 @@ def single_experiment(visualise, agent1, agent2):
     done = False
     round_number = 0
     time_list = [[], []]
-    chess_list = []
+    piece_move_list = []
 
     # Put the list of chess movement into dataframe
     for i in range(len(PIECE_ID_TO_NAME)):
-        chess_list.append([PIECE_ID_TO_NAME[i], 0, 0])
+        piece_move_list.append([PIECE_ID_TO_NAME[i], 0, 0])
 
-    piece_move_df = pd.DataFrame(chess_list, columns=['chess_piece', 'agent1_move', 'agent2_move'])
+    piece_move_df = pd.DataFrame(piece_move_list, columns=['chess_piece', 'agent1_move', 'agent2_move'])
+
+    reward_list = []
+    sacrifice_list = [[], []]
+
+    original_ally_pieces = alive_pieces(env, ALLY)
+    original_enemy_pieces = alive_pieces(env, ENEMY)
 
     while not done:
         # Initialise the starting variables for each round
         start_time = time.time()
-        piece_list = []
 
         if env.turn == ALLY:
+            # Get the red pieces that are alive
+            ally_piece_list = alive_pieces(env, ALLY)
+
+            # Check if there is any sacrifice piece
+            original_ally_pieces, ally_sacrifice, ally_sacrifice_list = check_sacrifice(original_ally_pieces, ally_piece_list)
+
             # Check which agent plays to allow multiple experiment
             action, player = agent_moves(env, agent1, agent_player1, ALLY)
 
@@ -59,13 +70,23 @@ def single_experiment(visualise, agent1, agent2):
             # Increase the counter based on the piece moved
             movement_counter(piece_move_df, PIECE_ID_TO_NAME[move[0]], ALLY)
 
-            # Get the red pieces that are alive
-            piece_set = env.ally_piece
-            for piece_id, piece_obj in enumerate(piece_set[1:], 1):
-                if piece_obj.state == ALIVE:
-                    piece_list.append(PIECE_ID_TO_NAME[piece_id])
+            # Calculate the reward
+            reward_counter(reward_list, reward, ALLY, round_number)
+
+            # Check if you ate any piece after sacrifice
+            if ally_sacrifice:
+                piece_revenged = sacrifice_pieces_ate(env, ENEMY, original_enemy_pieces)
+                sacrifice_list[0].append([round_number + 1, ally_sacrifice_list[0], piece_revenged])
+
+            print(f"Pieces Alive: {ally_piece_list}")
 
         else:
+            # Get the black pieces that are alive
+            enemy_piece_list = alive_pieces(env, ENEMY)
+
+            # Check if there is any sacrifice piece
+            original_enemy_pieces, enemy_sacrifice, enemy_sacrifice_list = check_sacrifice(original_enemy_pieces, enemy_piece_list)
+
             # Check which agent plays to allow multiple experiment
             action, player = agent_moves(env, agent2, agent_player2, ENEMY)
 
@@ -81,17 +102,20 @@ def single_experiment(visualise, agent1, agent2):
             # Increase the counter based on the piece moved
             movement_counter(piece_move_df, PIECE_ID_TO_NAME[move[0]], ENEMY)
 
-            # Get the black pieces that are alive
-            piece_set = env.enemy_piece
-            for piece_id, piece_obj in enumerate(piece_set[1:], 1):
-                if piece_obj.state == ALIVE:
-                    piece_list.append(PIECE_ID_TO_NAME[piece_id])
+            # Calculate the reward
+            reward_counter(reward_list, reward, ENEMY, round_number)
+
+            # Check if you ate any piece after sacrifice
+            if enemy_sacrifice:
+                piece_revenged = sacrifice_pieces_ate(env, ALLY, original_ally_pieces)
+                sacrifice_list[1].append([round_number + 1, enemy_sacrifice_list[0], piece_revenged])
+
+            print(f"Pieces Alive: {enemy_piece_list}")
 
         if visualise:
             render_env.render()
 
         round_number += 1
-        print(f"Pieces Alive: {piece_list}")
         print(f"Round: {round_number}")
         print(f"{player} made the move {PIECE_ID_TO_NAME[move[0]]} from {move[1]} to {move[2]}.")
         print(f"Reward: {reward}")
@@ -100,11 +124,27 @@ def single_experiment(visualise, agent1, agent2):
         # If the round is over 200, then the game will be terminated and both of them drew
         if round_number >= 200 and not done:
             print("Resulting in Draw, Exceeded Round Limit")
+            outcome = 'BOTH AGENT DRAW'
+            outcome_list = ['Draw', 'Draw']
             break
+        elif done:
+            if 'GENERAL' in ally_piece_list:
+                outcome = agent1 + ' WINS'
+                outcome_list = ['Win', 'Lose']
+
+            elif 'GENERAL' in enemy_piece_list:
+                outcome = agent2 + ' WINS'
+                outcome_list = ['Lose', 'Win']
+
+    print(outcome)
+    print(sacrifice_list)
+    ally_dead_piece = dead_pieces(PIECE_ID_TO_NAME, ally_piece_list)
+    enemy_dead_piece = dead_pieces(PIECE_ID_TO_NAME, enemy_piece_list)
 
     print("Closing Xiangqi environment\n")
+
     env.close()
-    return time_list
+    return time_list, outcome_list, ally_dead_piece, enemy_dead_piece, piece_move_df.values.tolist(), reward_list
 
 
 def agent_moves(env, agent, agent_player, player):
@@ -144,4 +184,4 @@ def starting_agent(agent):
 
 
 if __name__ == '__main__':
-    single_experiment(False, 'alpha_beta_agent', 'random_agent')
+    round_result = single_experiment(False, 'alpha_beta_agent', 'random_agent')
