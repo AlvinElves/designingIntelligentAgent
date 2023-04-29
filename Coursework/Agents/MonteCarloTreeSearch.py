@@ -43,7 +43,6 @@ class MonteCarloTreeSearch:
             for c in range(BOARD_COLS):
                 if original_state[r][c] != action_state[r][c]:
                     if action_state[r][c] != 0:
-                        print(action_state[r][c])
                         move_piece = abs(action_state[r][c])
                         end_pos = [r, c]
                     else:

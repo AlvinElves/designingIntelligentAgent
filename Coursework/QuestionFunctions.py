@@ -1,5 +1,3 @@
-import numpy as np
-
 from gym_xiangqi.constants import ALLY, ALIVE, PIECE_ID_TO_NAME
 
 
@@ -30,7 +28,7 @@ def sacrifice_pieces_ate(env, player, previous_piece_list):
     pieces_ate = list(set(previous_piece_list) - set(piece_list))
 
     if len(pieces_ate) == 0:
-        return np.nan
+        return 'None'
     else:
         return pieces_ate[0]
 
@@ -50,20 +48,20 @@ def alive_pieces(env, player):
 
 
 def dead_pieces(original_list, pieces_list):
-    return list(set(original_list[1:]) - set(pieces_list))
+    return list(set(original_list) - set(pieces_list))
 
 
-def reward_counter(reward_list, reward_amount, player, round_number):
+def reward_counter(reward_list, reward_amount, player):
     if player == ALLY:
         if reward_amount != 0:
-            reward_list.append([round_number + 1, reward_amount, -reward_amount])
+            reward_list.append([reward_amount, -reward_amount])
         else:
-            reward_list.append([round_number + 1, reward_amount, reward_amount])
+            reward_list.append([reward_amount, reward_amount])
     else:
         if reward_amount != 0:
-            reward_list.append([round_number + 1, -reward_amount, reward_amount])
+            reward_list.append([-reward_amount, reward_amount])
         else:
-            reward_list.append([round_number + 1, reward_amount, reward_amount])
+            reward_list.append([reward_amount, reward_amount])
 
     return reward_list
 

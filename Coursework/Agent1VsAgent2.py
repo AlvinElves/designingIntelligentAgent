@@ -71,7 +71,7 @@ def single_experiment(visualise, agent1, agent2):
             movement_counter(piece_move_df, PIECE_ID_TO_NAME[move[0]], ALLY)
 
             # Calculate the reward
-            reward_counter(reward_list, reward, ALLY, round_number)
+            reward_counter(reward_list, reward, ALLY)
 
             # Check if you ate any piece after sacrifice
             if ally_sacrifice:
@@ -103,7 +103,7 @@ def single_experiment(visualise, agent1, agent2):
             movement_counter(piece_move_df, PIECE_ID_TO_NAME[move[0]], ENEMY)
 
             # Calculate the reward
-            reward_counter(reward_list, reward, ENEMY, round_number)
+            reward_counter(reward_list, reward, ENEMY)
 
             # Check if you ate any piece after sacrifice
             if enemy_sacrifice:
@@ -127,24 +127,25 @@ def single_experiment(visualise, agent1, agent2):
             outcome = 'BOTH AGENT DRAW'
             outcome_list = ['Draw', 'Draw']
             break
+
+        # if the round is over
         elif done:
-            if 'GENERAL' in ally_piece_list:
+            # If the current turn is enemy, then agent 1 won, since after ally move the game ended
+            if env.turn == ENEMY:
                 outcome = agent1 + ' WINS'
                 outcome_list = ['Win', 'Lose']
 
-            elif 'GENERAL' in enemy_piece_list:
+            else:
                 outcome = agent2 + ' WINS'
                 outcome_list = ['Lose', 'Win']
 
     print(outcome)
-    print(sacrifice_list)
-    ally_dead_piece = dead_pieces(PIECE_ID_TO_NAME, ally_piece_list)
-    enemy_dead_piece = dead_pieces(PIECE_ID_TO_NAME, enemy_piece_list)
-
+    ally_dead_piece = dead_pieces(PIECE_ID_TO_NAME[1:], alive_pieces(env, ALLY))
+    enemy_dead_piece = dead_pieces(PIECE_ID_TO_NAME[1:], alive_pieces(env, ENEMY))
     print("Closing Xiangqi environment\n")
 
     env.close()
-    return time_list, outcome_list, ally_dead_piece, enemy_dead_piece, piece_move_df.values.tolist(), reward_list
+    return time_list, outcome_list, ally_dead_piece, enemy_dead_piece, piece_move_df, reward_list, sacrifice_list
 
 
 def agent_moves(env, agent, agent_player, player):
@@ -157,7 +158,7 @@ def agent_moves(env, agent, agent_player, player):
         player = "Minimax Agent"
 
     elif agent == 'alpha_beta_agent':
-        action = agent_player.alpha_beta_pruning_move(env, 2, player, 5)
+        action = agent_player.alpha_beta_pruning_move(env, 3, player, 5)
         player = "Alpha Beta Agent"
 
     else:

@@ -60,6 +60,8 @@ class MonteCarlo:
 
     def random_rollout(self, node):
         self.child_finder(node)
+        if len(node.children) == 0:
+            return
         child = random.choice(node.children)
         node.children = []
         node.add_child(child)
