@@ -1,3 +1,4 @@
+# This File is created by myself
 import numpy as np
 from copy import deepcopy
 import random
@@ -19,7 +20,7 @@ class MiniMaxAgent:
 
         # score for each legal_moves
         for move in legal_moves:
-            # copy the environment to avoid changing  the original environment
+            # copy the environment to avoid changing the original environment
             temp = deepcopy(env)
             _, reward, done, _ = temp.step(move)
 

@@ -1,3 +1,4 @@
+# This File is adapted from Xiangqi OpenAI Gym Environment
 import time
 import pandas as pd
 
@@ -185,4 +186,4 @@ def starting_agent(agent):
 
 
 if __name__ == '__main__':
-    round_result = single_experiment(False, 'alpha_beta_agent', 'random_agent')
+    round_result = single_experiment(True, 'alpha_beta_agent', 'random_agent')

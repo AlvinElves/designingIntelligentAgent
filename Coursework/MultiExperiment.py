@@ -1,3 +1,4 @@
+# This File is created by myself
 import numpy as np
 import os
 
@@ -91,6 +92,7 @@ def multi_agent_experiment(visualise):
                         result_df[i].to_excel(writer, sheet_name=sheet_column[i], index=False)
 
 
+# Read the results store in the Excel File
 def read_results_file():
     agents_list = ['random_agent', 'minimax_agent', 'alpha_beta_agent', 'monte_carlo_agent']
     sheet_column = ['Time_Taken', 'Outcome', 'Dead_Pieces', 'Moves_Pieces', 'Reward', 'Sacrifice_Pieces']
@@ -102,6 +104,7 @@ def read_results_file():
     reward_list = []
     sacrifice_list = []
 
+    # Loop through the agents file
     for agent1 in agents_list:
         for agent2 in agents_list:
             if agent1 != agent2:
