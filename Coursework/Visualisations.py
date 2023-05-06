@@ -38,6 +38,7 @@ class Visualisations:
         self.total_revenge_visualisation(sacrifice_list, self.matches_order)
         self.win_rate_visualisation(outcome_list)
 
+    # Get the order of the matches between the agents
     def agent_matches(self):
         matches_order = []
         for agent1 in self.agents_list:
@@ -810,6 +811,8 @@ class Visualisations:
         column_name = piece_list[0].iloc[1:]['chess_piece']
         agent_column = []
         piece_column = []
+
+        # Get the X axis label for the graph
         for i in range(len(column_name.values)):
             agent_column.extend(agent_list)
 
@@ -819,12 +822,15 @@ class Visualisations:
             piece_column.append(column_name.values[i])
 
         x_axis_label = [piece_column, agent_column]
-        print(x_axis_label)
+
         fig = go.Figure()
 
+        # Loop through the matches between the agents
         for number, matches in enumerate(piece_list):
             added_agent_one = []
             added_agent_two = []
+
+            # loop through all 5 games from the matches
             for games in range(0, 10, 2):
                 agent_one = list(matches[matches.columns[games + 1]].iloc[1:])
                 agent_two = list(matches[matches.columns[games + 2]].iloc[1:])
@@ -838,6 +844,7 @@ class Visualisations:
 
             final_result = []
 
+            # Put the result in the correct order
             for j in range(len(added_agent_one)):
                 if matches_order[number][0] == agent_list[0]:
                     final_result.append(added_agent_one[j])
@@ -867,6 +874,7 @@ class Visualisations:
                 else:
                     final_result.append(0)
 
+            # Create the Bar
             fig.add_bar(x=x_axis_label, y=final_result,
                         name=matches_order[number][0] + " VS " + matches_order[number][1])
 

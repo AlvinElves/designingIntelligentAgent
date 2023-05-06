@@ -121,6 +121,6 @@ def read_results_file():
 
 
 if __name__ == '__main__':
-    #multi_agent_experiment(False)
+    multi_agent_experiment(visualise=False)
     result_list = read_results_file()
     Visualisations(result_list)
