@@ -26,15 +26,17 @@ class Visualisations:
 
         self.matches_order = self.agent_matches()
 
-        # self.win_rate_visualisation(outcome_list)
-        # self.movement_visualisation(chess_piece_list, self.matches_order, self.trace_name)
-        # self.total_movement_visualisation(chess_piece_list, self.matches_order, self.agents_list)
-        # self.dead_pieces_visualisation(dead_pieces_list, self.matches_order, self.trace_name)
-        # self.total_dead_piece_visualisation(dead_pieces_list, self.matches_order, self.agents_list)
-        # self.time_taken_visualisation(time_taken_list, self.matches_order, self.trace_name)
+        self.movement_visualisation(chess_piece_list, self.matches_order, self.trace_name)
+        self.total_movement_visualisation(chess_piece_list, self.matches_order, self.agents_list)
+        self.dead_pieces_visualisation(dead_pieces_list, self.matches_order, self.trace_name)
+        self.total_dead_piece_visualisation(dead_pieces_list, self.matches_order, self.agents_list)
+        self.time_taken_visualisation(time_taken_list, self.matches_order, self.trace_name)
         self.total_time_taken_visualisation(time_taken_list, self.matches_order)
-        # self.reward_visualisation(reward_list, self.matches_order, self.trace_name)
-        # self.total_reward_visualisation(reward_list, self.matches_order)
+        self.reward_visualisation(reward_list, self.matches_order, self.trace_name)
+        self.total_reward_visualisation(reward_list, self.matches_order)
+        self.revenge_visualisation(sacrifice_list, self.matches_order, self.trace_name)
+        self.total_revenge_visualisation(sacrifice_list, self.matches_order)
+        self.win_rate_visualisation(outcome_list)
 
     def agent_matches(self):
         matches_order = []
@@ -45,6 +47,192 @@ class Visualisations:
                 else:
                     matches_order.append([agent1, agent2])
         return matches_order
+
+    # Visualising how many times does the agent sacrifice a piece to kill the opponent piece
+    def total_revenge_visualisation(self, sacrifice_list, matches_order):
+        agent_shown = []
+        revenged_column = []
+        game_column = []
+        matches = []
+        y_value = []
+
+        # Loop through the agents
+        for agent1 in self.agents_list:
+            for agent2 in self.agents_list:
+                if agent1 == agent2:
+                    pass
+                else:
+                    # Merge the agents together if they are versing the same agents, just might be playing as red or black piece
+                    if [agent1, agent2] and [agent2, agent1] not in agent_shown:
+                        matches.append(matches_order.index([agent1, agent2]))
+                        agent_shown.append([agent1, agent2])
+                        matches.append(matches_order.index([agent2, agent1]))
+                        agent_shown.append([agent2, agent1])
+
+                    else:
+                        continue
+
+        # Create the figure
+        fig = go.Figure()
+
+        # Create the X Axis Label
+        for i in range(len(agent_shown)):
+            game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
+            game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
+            game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
+            game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
+            revenged_column.extend([agent_shown[i][0] + ' No Revenge', agent_shown[i][0] + ' Revenged',
+                                    agent_shown[i][1] + '  No Revenge', agent_shown[i][1] + ' Revenged'])
+
+        x_axis_label = [game_column, revenged_column]
+
+        # Loop through the matches
+        for i in range(len(agent_shown)):
+            match = sacrifice_list[matches[i]]
+            agent1_revenge = 0
+            agent1_no_revenge = 0
+            agent2_revenge = 0
+            agent2_no_revenge = 0
+
+            # Loop through the games
+            for column in range(0, 30, 6):
+                agent1_match = match[match.columns[column + 2]].dropna()
+                agent2_match = match[match.columns[column + 5]].dropna()
+
+                for row in range(len(agent1_match)):
+                    if agent1_match.iloc[row] == 'None':
+                        agent1_no_revenge += 1
+                    else:
+                        agent1_revenge += 1
+
+                for row in range(len(agent2_match)):
+                    if agent2_match.iloc[row] == 'None':
+                        agent2_no_revenge += 1
+                    else:
+                        agent2_revenge += 1
+
+            # Get the Y Values
+            y_value.extend([agent1_no_revenge, agent1_revenge, agent2_no_revenge, agent2_revenge])
+
+        # Create the Bar Figure
+        fig.add_bar(x=x_axis_label, y=y_value)
+        fig.update_xaxes(rangeslider_visible=True)
+        fig.update_layout(xaxis=dict(tickfont=dict(size=10)), xaxis_title="Matches",
+                          yaxis_title="Number of Chess Piece Revenged",
+                          title="Chess Piece Revenge after Sacrificing Ally Chess Piece Experiments for the Agents")
+        fig.show()
+
+    # Visualising what piece did the agent killed after sacrificing a piece
+    def revenge_visualisation(self, sacrifice_list, matches_order, trace_name):
+        agent_shown = []
+        revenge_piece = [['None', 0, 0]]
+        # Put the list of dead pieces into list
+        for i in range(1, len(PIECE_ID_TO_NAME)):
+            revenge_piece.append([PIECE_ID_TO_NAME[i], 0, 0])
+
+        # Create the empty dead pieces dataframe
+        revenge_piece_df = pd.DataFrame(revenge_piece, columns=['chess_piece', 'agent1', 'agent2'])
+
+        # Loop through the agents
+        for agent1 in self.agents_list:
+            for agent2 in self.agents_list:
+                matches = []
+                if agent1 == agent2:
+                    pass
+                else:
+                    # Merge the agents together if they are versing the same agents, just might be playing as red or black piece
+                    if [agent1, agent2] and [agent2, agent1] not in agent_shown:
+                        matches.append(matches_order.index([agent1, agent2]))
+                        agent_shown.append([agent1, agent2])
+                        matches.append(matches_order.index([agent2, agent1]))
+                        agent_shown.append([agent2, agent1])
+                    else:
+                        continue
+
+                    # Initialise the variables
+                    column_name = revenge_piece_df['chess_piece']
+                    agent_column = []
+                    piece_column = []
+
+                    # Get the X axis label for the graph
+                    for i in range(len(column_name.values)):
+                        agent_column.append(agent1)
+                        agent_column.append(agent2)
+
+                        piece_column.append(column_name.values[i])
+                        piece_column.append(column_name.values[i])
+
+                    x_axis_label = [piece_column, agent_column]
+
+                    # Create the figure and get the matches results
+                    fig = go.Figure()
+                    match_one_results = sacrifice_list[matches[0]]  # Agent 1 VS Agent 2, Red piece player
+                    match_two_results = sacrifice_list[matches[1]]  # Agent 2 VS Agent 1, Black piece player
+                    trace = 0
+
+                    # Loop through all 5 games for the first match
+                    for column in range(0, 30, 6):
+                        # Create the empty dead pieces dataframe
+                        revenge_piece_df = pd.DataFrame(revenge_piece, columns=['chess_piece', 'agent1', 'agent2'])
+
+                        # Loop through the result of the games
+                        for i in range(len(match_one_results[match_one_results.columns[column]])):
+                            piece1 = match_one_results[match_one_results.columns[column + 2]].iloc[i]
+                            piece2 = match_one_results[match_one_results.columns[column + 5]].iloc[i]
+
+                            revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece1, ['agent1']] = \
+                                revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece1]['agent1'] + 1
+
+                            revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece2, ['agent2']] = \
+                                revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece2]['agent2'] + 1
+
+                        agent_one_revenged = list(revenge_piece_df[revenge_piece_df.columns[1]])
+                        agent_two_revenged = list(revenge_piece_df[revenge_piece_df.columns[2]])
+
+                        final_result = []
+
+                        # Append the results into a final list to add to figure
+                        for j in range(len(agent_one_revenged)):
+                            final_result.append(agent_one_revenged[j])
+                            final_result.append(agent_two_revenged[j])
+
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        trace += 1
+
+                    # Loop another 5 games for the second match
+                    for column in range(0, 30, 6):
+                        # Create the empty dead pieces dataframe
+                        revenge_piece_df = pd.DataFrame(revenge_piece, columns=['chess_piece', 'agent1', 'agent2'])
+
+                        # Loop through the result of the games
+                        for i in range(len(match_two_results[match_two_results.columns[column]])):
+                            piece1 = match_two_results[match_two_results.columns[column + 5]].iloc[i]
+                            piece2 = match_two_results[match_two_results.columns[column + 2]].iloc[i]
+
+                            revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece1, ['agent1']] = \
+                                revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece1]['agent1'] + 1
+
+                            revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece2, ['agent2']] = \
+                                revenge_piece_df.loc[revenge_piece_df['chess_piece'] == piece2]['agent2'] + 1
+
+                        agent_one_revenged = list(revenge_piece_df[revenge_piece_df.columns[1]])
+                        agent_two_revenged = list(revenge_piece_df[revenge_piece_df.columns[2]])
+
+                        final_result = []
+
+                        # Append the results into a final list to add to figure
+                        for j in range(len(agent_one_revenged)):
+                            final_result.append(agent_one_revenged[j])
+                            final_result.append(agent_two_revenged[j])
+
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        trace += 1
+
+                    fig.update_layout(barmode="relative", xaxis_title="Chess Piece",
+                                      yaxis_title="Number of Chess Piece Revenged",
+                                      title="Number of Chess Piece Revenged after Sacrificing a Chess Piece for " + agent1 +
+                                            " VS " + agent2)
+                    fig.show()
 
     # Visualising the Win percentage
     def win_rate_visualisation(self, outcome_list):
@@ -114,8 +302,9 @@ class Visualisations:
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
-            time_column.extend([agent_shown[i][0] + ' Fastest', agent_shown[i][0] + ' Average', agent_shown[i][0] + ' Slowest',
-                                agent_shown[i][1] + ' Fastest', agent_shown[i][1] + ' Average', agent_shown[i][1] + ' Slowest'])
+            time_column.extend(
+                [agent_shown[i][0] + ' Fastest', agent_shown[i][0] + ' Average', agent_shown[i][0] + ' Slowest',
+                 agent_shown[i][1] + ' Fastest', agent_shown[i][1] + ' Average', agent_shown[i][1] + ' Slowest'])
 
         x_axis_label = [game_column, time_column]
 
@@ -156,7 +345,7 @@ class Visualisations:
     # Visualising the total time taken
     def total_reward_visualisation(self, reward_list, matches_order):
         agent_shown = []
-        time_column = []
+        reward_column = []
         game_column = []
         matches = []
         y_value = []
@@ -185,10 +374,11 @@ class Visualisations:
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
-            time_column.extend([agent_shown[i][0] + ' Average', agent_shown[i][0] + ' Total',
-                                agent_shown[i][1] + ' Average', agent_shown[i][1] + ' Total'])
+            reward_column.extend(
+                [agent_shown[i][0] + ' Lowest', agent_shown[i][0] + ' Average', agent_shown[i][0] + ' Highest',
+                 agent_shown[i][1] + ' Lowest', agent_shown[i][1] + ' Average', agent_shown[i][1] + ' Highest'])
 
-        x_axis_label = [game_column, time_column]
+        x_axis_label = [game_column, reward_column]
 
         # Loop through the matches
         for i in range(len(agent_shown)):
@@ -210,8 +400,8 @@ class Visualisations:
                 agent2_average.extend(list(agent2_match.values))
 
             # Get the Y Values
-            y_value.extend([sum(agent1_average) / len(agent1_average), max(agent1_total),
-                            sum(agent2_average) / len(agent2_average), max(agent2_total)])
+            y_value.extend([min(agent1_total), sum(agent1_average) / len(agent1_average), max(agent1_total),
+                            min(agent2_total), sum(agent2_average) / len(agent2_average), max(agent2_total)])
 
         # Create the Bar Figure
         fig.add_bar(x=x_axis_label, y=y_value)
