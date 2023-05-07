@@ -81,6 +81,8 @@ def multi_agent_experiment(visualise):
         os.mkdir(directory_name)
     except OSError as error:
         print(error)
+
+    # Loop through the agents and conduct the experiments then save the result
     for agent1 in agents_list:
         for agent2 in agents_list:
             if agent1 != agent2:

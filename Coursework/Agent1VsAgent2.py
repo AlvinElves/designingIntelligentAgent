@@ -149,6 +149,7 @@ def single_experiment(visualise, agent1, agent2):
     return time_list, outcome_list, ally_dead_piece, enemy_dead_piece, piece_move_df, reward_list, sacrifice_list
 
 
+# Get the agent movement based on the decision made
 def agent_moves(env, agent, agent_player, player):
     if agent == 'random_agent':
         action = agent_player.move(env)
@@ -174,6 +175,7 @@ def agent_moves(env, agent, agent_player, player):
     return action, player
 
 
+# Initialise the agents for the experiments conducted
 def starting_agent(agent):
     if agent == 'random_agent':
         return RandomAgent()
@@ -186,4 +188,5 @@ def starting_agent(agent):
 
 
 if __name__ == '__main__':
+    # Testing the single experiment
     round_result = single_experiment(True, 'alpha_beta_agent', 'random_agent')

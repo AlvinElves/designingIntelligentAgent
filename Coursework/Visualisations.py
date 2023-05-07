@@ -19,10 +19,10 @@ class Visualisations:
         reward_list = result_list[4]
         sacrifice_list = result_list[5]
 
-        self.trace_name = ["Game 1, Red Piece", "Game 2, Red Piece", "Game 3, Red Piece", "Game 4, Red Piece",
-                           "Game 5, Red Piece",
-                           "Game 6, Black Piece", "Game 7, Black Piece", "Game 8, Black Piece", "Game 9, Black Piece",
-                           "Game 10, Black Piece"]
+        self.trace_name = ["Game 1", "Game 2", "Game 3", "Game 4",
+                           "Game 5",
+                           "Game 6", "Game 7", "Game 8", "Game 9",
+                           "Game 10"]
 
         self.matches_order = self.agent_matches()
 
@@ -83,9 +83,10 @@ class Visualisations:
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             revenged_column.extend([agent_shown[i][0] + ' No Revenge', agent_shown[i][0] + ' Revenged',
-                                    agent_shown[i][1] + '  No Revenge', agent_shown[i][1] + ' Revenged'])
+                                    agent_shown[i][1] + ' No Revenge', agent_shown[i][1] + ' Revenged'])
 
         x_axis_label = [game_column, revenged_column]
+        print(x_axis_label)
 
         # Loop through the matches
         for i in range(len(agent_shown)):
@@ -197,7 +198,7 @@ class Visualisations:
                             final_result.append(agent_one_revenged[j])
                             final_result.append(agent_two_revenged[j])
 
-                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace] + ', Red Piece, Agent 1')
                         trace += 1
 
                     # Loop another 5 games for the second match
@@ -226,7 +227,7 @@ class Visualisations:
                             final_result.append(agent_one_revenged[j])
                             final_result.append(agent_two_revenged[j])
 
-                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace] + ', Black Piece, Agent 1')
                         trace += 1
 
                     fig.update_layout(barmode="relative", xaxis_title="Chess Piece",
@@ -375,11 +376,13 @@ class Visualisations:
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
             game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
-            reward_column.extend(
-                [agent_shown[i][0] + ' Lowest', agent_shown[i][0] + ' Average', agent_shown[i][0] + ' Highest',
-                 agent_shown[i][1] + ' Lowest', agent_shown[i][1] + ' Average', agent_shown[i][1] + ' Highest'])
+            game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
+            game_column.extend([agent_shown[i][0] + '<br>VS<br>' + agent_shown[i][1]])
+            reward_column.extend([agent_shown[i][0] + ' Lowest', agent_shown[i][0] + ' Average', agent_shown[i][0] + ' Highest',
+                                  agent_shown[i][1] + ' Lowest', agent_shown[i][1] + ' Average', agent_shown[i][1] + ' Highest'])
 
         x_axis_label = [game_column, reward_column]
+        print(x_axis_label)
 
         # Loop through the matches
         for i in range(len(agent_shown)):
@@ -387,8 +390,6 @@ class Visualisations:
 
             agent1_total = []
             agent2_total = []
-            agent1_average = []
-            agent2_average = []
 
             # Loop through the games
             for column in range(0, 10, 2):
@@ -397,12 +398,12 @@ class Visualisations:
 
                 agent1_total.append(sum(agent1_match))
                 agent2_total.append(sum(agent2_match))
-                agent1_average.extend(list(agent1_match.values))
-                agent2_average.extend(list(agent2_match.values))
 
             # Get the Y Values
-            y_value.extend([min(agent1_total), sum(agent1_average) / len(agent1_average), max(agent1_total),
-                            min(agent2_total), sum(agent2_average) / len(agent2_average), max(agent2_total)])
+            y_value.extend([min(agent1_total), sum(agent1_total) / len(agent1_total), max(agent1_total),
+                            min(agent2_total), sum(agent2_total) / len(agent2_total), max(agent2_total)])
+
+            print(y_value)
 
         # Create the Bar Figure
         fig.add_bar(x=x_axis_label, y=y_value)
@@ -443,12 +444,12 @@ class Visualisations:
                         agent_1_game = match_1[match_1.columns[game]].dropna()
 
                         x = list(range(len(agent_1_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace] + ', Red Piece',
                                                  line_shape='linear'))
 
                         agent_2_game = match_1[match_1.columns[game + 1]].dropna()
                         x = list(range(len(agent_2_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace] + ', Black Piece',
                                                  line_shape='linear'))
                         trace += 1
 
@@ -457,12 +458,12 @@ class Visualisations:
                         agent_1_game = match_2[match_2.columns[game + 1]].dropna()
 
                         x = list(range(len(agent_1_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace] + ', Black Piece',
                                                  line_shape='linear'))
 
                         agent_2_game = match_2[match_2.columns[game]].dropna()
                         x = list(range(len(agent_2_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace] + ', Red Piece',
                                                  line_shape='linear'))
                         trace += 1
 
@@ -503,12 +504,12 @@ class Visualisations:
                         agent_1_game = match_1[match_1.columns[game]].dropna()
 
                         x = list(range(len(agent_1_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace] + ', Red Piece',
                                                  line_shape='linear'))
 
                         agent_2_game = match_1[match_1.columns[game + 1]].dropna()
                         x = list(range(len(agent_2_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace] + ', Black Piece',
                                                  line_shape='linear'))
                         trace += 1
 
@@ -517,12 +518,12 @@ class Visualisations:
                         agent_1_game = match_2[match_2.columns[game + 1]].dropna()
 
                         x = list(range(len(agent_1_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_1_game.values, name=agent1 + ', ' + trace_name[trace] + ', Black Piece',
                                                  line_shape='linear'))
 
                         agent_2_game = match_2[match_2.columns[game]].dropna()
                         x = list(range(len(agent_2_game)))
-                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace],
+                        fig.add_trace(go.Scatter(x=x, y=agent_2_game.values, name=agent2 + ', ' + trace_name[trace] + ', Red Piece',
                                                  line_shape='linear'))
                         trace += 1
 
@@ -605,7 +606,7 @@ class Visualisations:
                             final_result.append(agent_one_dead[j])
                             final_result.append(agent_two_dead[j])
 
-                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace] + ', Red Piece, Agent 1')
                         trace += 1
 
                     # Loop another 5 games for the second match
@@ -634,7 +635,7 @@ class Visualisations:
                             final_result.append(agent_one_dead[j])
                             final_result.append(agent_two_dead[j])
 
-                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace] + ', Black Piece, Agent 1')
                         trace += 1
 
                     fig.update_layout(barmode="relative", xaxis_title="Chess Piece", yaxis_title="Number of Death",
@@ -784,7 +785,7 @@ class Visualisations:
                             final_result.append(result_one[j])
                             final_result.append(result_two[j])
 
-                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace] + ', Red Piece, Agent 1')
                         trace += 1
 
                     # Loop another 5 games for the second match
@@ -799,7 +800,7 @@ class Visualisations:
                             final_result.append(result_one[j])
                             final_result.append(result_two[j])
 
-                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace])
+                        fig.add_bar(x=x_axis_label, y=final_result, name=trace_name[trace] + ', Black Piece, Agent 1')
                         trace += 1
 
                     fig.update_layout(barmode="relative", xaxis_title="Chess Piece", yaxis_title="Number of Moves",

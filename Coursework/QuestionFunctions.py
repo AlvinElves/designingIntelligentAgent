@@ -2,6 +2,7 @@
 from gym_xiangqi.constants import ALLY, ALIVE, PIECE_ID_TO_NAME
 
 
+# Time taken for each move (Question)
 def time_taken(start_time, end_time, time_list, player):
     difference = end_time - start_time
 
@@ -13,6 +14,7 @@ def time_taken(start_time, end_time, time_list, player):
     return time_list
 
 
+# Check if there is any sacrifice chess piece
 def check_sacrifice(original_list, pieces_list):
     sacrifice_list = list(set(original_list) - set(pieces_list))
     if len(sacrifice_list) == 0:
@@ -23,6 +25,7 @@ def check_sacrifice(original_list, pieces_list):
     return pieces_list, sacrifice, sacrifice_list
 
 
+# Check if the ally make any revenged moves after sacrificing a chess piece (Question)
 def sacrifice_pieces_ate(env, player, previous_piece_list):
     piece_list = alive_pieces(env, player)
 
@@ -34,6 +37,7 @@ def sacrifice_pieces_ate(env, player, previous_piece_list):
         return pieces_ate[0]
 
 
+# Get the chess pieces that is alive
 def alive_pieces(env, player):
     piece_list = []
     if player == ALLY:
@@ -48,10 +52,12 @@ def alive_pieces(env, player):
     return piece_list
 
 
+# Get the chess pieces that are dead (Questions)
 def dead_pieces(original_list, pieces_list):
     return list(set(original_list) - set(pieces_list))
 
 
+# Get the reward of each moves (Questions)
 def reward_counter(reward_list, reward_amount, player):
     if player == ALLY:
         if reward_amount != 0:
@@ -67,6 +73,7 @@ def reward_counter(reward_list, reward_amount, player):
     return reward_list
 
 
+# Increase the chess piece movement (Questions)
 def movement_counter(movement_dataset, piece, player):
     if player == ALLY:
         movement_dataset.loc[movement_dataset['chess_piece'] == piece, ['agent1_move']] = \
